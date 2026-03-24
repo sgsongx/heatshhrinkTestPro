@@ -1,0 +1,189 @@
+{
+	"version": "2.0.0",
+	// 1. 在顶层定义 'inputs' 块
+	"inputs": [
+		{
+		"id": "addr2line", // 变量 ID
+		"type": "promptString", // 类型：提示输入
+		"description": "请输入需要定位的地址",
+		},
+		{
+		"id": "download_target", // 变量 ID
+		"type": "pickString", // 类型：下拉选择
+		"description": "请选择下载对象",
+		"options": [
+			"App",   // 选项1
+			"Bootloader",  // 选项2
+			"All"
+		],
+		"default": "App"
+		},
+	],
+	"tasks": [
+		{
+			"type": "shell",
+			"label": "build target pre",
+			// CFLAGS需要使用''包含起来,否则会被分开识别
+			// "command": "make -j8 all CFLAGS='-DModel_Code=102 -DTestAppConfigJump=991 -DModeConfig_Set=1 -DJumpPassState=0' > ./build.log 2> ./build_err.log",
+			"command": "make -j8 all > ./build.log 2> ./build_err.log",
+			"args": [],
+			"options": {
+				"cwd": "${config:IdeBuildPath}",
+				"shell": {
+					"executable": "D:/SSG_WORKSPACE/software/Git/bin/bash.exe",
+					"args": ["-c"]
+				}
+			},
+			"group": "build",
+			"detail": "build target"
+		},
+		{
+			"type": "shell",
+			"label": "build target",
+			"command": "./gen_compile_commands.py --format arguments --parse ./build.log ",
+			"args": [
+				// "make",
+				// "-j8",
+				// "all",
+				// "> ./build.log 2>&1"
+			],
+			"options": {
+				"cwd": "${config:IdeBuildPath}",
+				"shell": {
+					"executable": "D:/SSG_WORKSPACE/software/Git/bin/bash.exe",
+					"args": ["-c"]
+				}
+			},
+			"group": "build",
+			"detail": "build and output json",
+			"dependsOn": "build target pre"
+		},
+		{
+			"type": "shell",
+			"label": "Clean target",
+			"command": "make -j8 clean && rm ./compile_commands.json && rm ./build_err.log && rm ./build.log",
+			"options": {
+				"cwd": "${config:IdeBuildPath}",
+				"shell": {
+					"executable": "D:/SSG_WORKSPACE/software/Git/bin/bash.exe",
+					"args": ["-c"]
+				}
+			},
+			"group": "build",
+			"detail": "Clean target"
+		},
+		{
+			"type": "shell",
+			"label": "build and download",
+			"command": "${config:jlinkPath} -ExitOnError 1 -SelectEmuBySN ${config:jlinkSn} -AutoConnect 1 -Device EFR32BG22CxxxF512 -If SWD -Speed 8000 -CommandFile ${config:buildFilePath}/download_App.jlink",
+			"options": {
+				"cwd": "${config:buildFilePath}"
+			},
+			"group": "build",
+			"detail": "build and download",
+			"dependsOn": "build target"
+		},
+
+		{
+			"type": "shell",
+			"label": "Clean and Build",
+			"command": "make -j8 all > ./build.log 2> ./build_err.log",
+			"args": [
+				// "make",
+				// "-j8",
+				// "all",
+				// "> ./build.log 2>&1"
+			],
+			"options": {
+				"cwd": "${config:IdeBuildPath}",
+				"shell": {
+					"executable": "D:/SSG_WORKSPACE/software/Git/bin/bash.exe",
+					"args": ["-c"]
+				}
+			},
+			"group": "build",
+			"detail": "build target",
+			"dependsOn": "Clean target"
+		},
+		{
+			"type": "shell",
+			"label": "rebuild all",
+			"command": "./gen_compile_commands.py --format arguments --parse ./build.log ",
+			"args": [
+				// "make",
+				// "-j8",
+				// "all",
+				// "> ./build.log 2>&1"
+			],
+			"options": {
+				"cwd": "${config:IdeBuildPath}",
+				"shell": {
+					"executable": "D:/SSG_WORKSPACE/software/Git/bin/bash.exe",
+					"args": ["-c"]
+				}
+			},
+			"group": "build",
+			"detail": "build and output json",
+			"dependsOn": "Clean and Build"
+		},
+		{
+			"type": "shell",
+			"label": "download",
+			"command": "${config:jlinkPath} -ExitOnError 1 -AutoConnect 1 -SelectEmuBySN ${config:jlinkSn} -Device EFR32BG22CxxxF512 -If SWD -Speed 4000 -CommandFile ${config:buildFilePath}/download_${input:download_target}.jlink",
+			"options": {
+				"cwd": "${config:buildFilePath}"
+			},
+			"group": "build",
+			"detail": "download target"
+		},
+		{
+			"type": "shell",
+			"label": "erase chip",
+			"command": "${config:jlinkPath} -ExitOnError 1 -AutoConnect 1 -SelectEmuBySN ${config:jlinkSn} -Device EFR32BG22CxxxF512 -If SWD -Speed 4000 -CommandFile ${config:buildFilePath}/erase.jlink",
+			"options": {
+				"cwd": "${config:buildFilePath}"
+			},
+			"group": "build",
+			"detail": "erase chip"
+		},
+		{
+			"type": "shell",
+			"label": "detect conn",
+			"command": "${config:jlinkPath} -ExitOnError 1 -AutoConnect 1 -SelectEmuBySN ${config:jlinkSn} -Device EFR32BG22CxxxF512 -If SWD -Speed 4000 -CommandFile ${config:buildFilePath}/jlink_check_connection.jlink",
+			"options": {
+				"cwd": "${config:buildFilePath}"
+			},
+			"group": "build",
+			"detail": "detect connection"
+		},
+		{
+			"type": "shell",
+			"label": "output gbl",
+			"command": "${workspaceFolder}\\create_bl_files.bat",
+			"options": {
+				"cwd": "${workspaceFolder}",
+				"shell": {
+					"executable": "powershell.exe"
+				}
+			},
+			"detail": "output gbl",
+			"problemMatcher": []
+		},
+		{
+			"type": "shell",
+			"label": "addr2line",
+			"command": "arm-none-eabi-addr2line.exe",
+			"args": [
+				"-e",
+				"${config:buildFilePath}/App.axf",
+				"--functions",
+				"${input:addr2line}"
+			],
+			"options": {
+				"cwd": "${config:IdeBuildPath}"
+			},
+			"detail": "locate addr 2 line",
+			"problemMatcher": []
+		},
+	]
+}

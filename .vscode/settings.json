@@ -1,0 +1,9 @@
+{
+    "jlinkSn" : "601012373",
+    "projectRoot" : "C:/Users/SSG/Desktop/heatshrinkTest",
+    "buildFilePath" : "${config:projectRoot}/DAPTool",
+    "IdeBuildPath": "${config:projectRoot}/build",
+    "cortex-debug.variableUseNaturalFormat": true,
+    "python-envs.defaultEnvManager": "ms-python.python:conda",
+    "python-envs.defaultPackageManager": "ms-python.python:conda",
+}

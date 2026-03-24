@@ -1,0 +1,90 @@
+
+---
+CompileFlags:
+  Compiler: D:/simlicity studio/developer/toolchains/gnu_arm/12.2.rel1_2023.7/bin/arm-none-eabi-gcc.exe
+  Add:
+    - --target=arm-none-eabi
+    - -mcpu=cortex-m33
+    - -mthumb
+    - -D__GNUC__
+    - -Wno-unknown-attributes
+    - -ferror-limit=0
+    - -Wundef
+  Remove:
+    - -fno-isolate-erroneous-paths-dereference
+    - -fno-fat-lto-objects
+    - -fconserve-stack
+    - -mthumb-interwork
+    - -g* 
+---
+If:
+  PathMatch: .*\.c
+CompileFlags:
+  Add:
+    - -std=c99
+  Remove:
+    - -std
+---
+If:
+  PathMatch: .*\.h
+CompileFlags:
+  Add:
+    - -std=c99
+  Remove:
+    - -std
+---
+Index:
+  Background: Build
+  StandardLibrary: true
+Diagnostics:
+  Suppress:
+  - pp_including_mainfile_in_preamble
+  ClangTidy:
+    Add:
+      - bugprone-*
+      - cppcoreguidelines-*
+      - modernize-*
+      - performance-*
+      - readability-*
+    Remove:
+      - modernize-use-std-print
+      - bugprone-easily-swappable-parameters
+      - modernize-use-trailing-return-type
+      - cppcoreguidelines-owning-memory
+      - cppcoreguidelines-avoid-non-const-global-variables
+      - cppcoreguidelines-init-variables
+      - cppcoreguidelines-avoid-magic-numbers
+      - performance-avoid-endl
+      - performance-no-int-to-ptr
+      - readability-identifier-length
+      - readability-qualified-auto
+      - readability-function-cognitive-complexity
+      - readability-magic-numbers
+      - readability-function-size
+      - readability-else-after-return
+      - readability-isolate-declaration
+      - readability-braces-around-statements
+      - readability-enum-initial-value
+      - readability-math-missing-parentheses
+      - bugprone-reserved-identifier
+    FastCheckFilter: Loose
+  UnusedIncludes: Strict
+  Includes:
+    IgnoreHeader: []
+    AnalyzeAngledIncludes: false
+  MissingIncludes: none
+Completion:
+  AllScopes: true
+  HeaderInsertion: Never
+InlayHints:
+  Enabled: true
+  ParameterNames: true
+  DeducedTypes: true
+  Designators: true
+  BlockEnd: true
+  TypeNameLimit: 24
+Hover:
+  ShowAKA: true
+SemanticTokens:
+  DisabledKinds: []
+  DisabledModifiers: []
