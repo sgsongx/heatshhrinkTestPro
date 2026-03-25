@@ -2,3 +2,7 @@
 *.d
 *.lst
 build/heatshrinkTest.*
+.cache
+compile_commands.json
+DAPTool/build_err.log
+DAPTool/build.log

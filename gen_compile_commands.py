@@ -1,4 +1,4 @@
-#! /d/SSG_WORKSPACE/software/miniforge3/envs/UsrDef/python
+#! python
 import subprocess
 import sys
 import re

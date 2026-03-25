@@ -50,7 +50,7 @@
 			"options": {
 				"cwd": "${config:IdeBuildPath}",
 				"shell": {
-					"executable": "D:/SSG_WORKSPACE/software/Git/bin/bash.exe",
+					"executable": "${config:gitBashPath}",
 					"args": ["-c"]
 				}
 			},
@@ -65,7 +65,7 @@
 			"options": {
 				"cwd": "${config:IdeBuildPath}",
 				"shell": {
-					"executable": "D:/SSG_WORKSPACE/software/Git/bin/bash.exe",
+					"executable": "${config:gitBashPath}",
 					"args": ["-c"]
 				}
 			},
@@ -97,7 +97,7 @@
 			"options": {
 				"cwd": "${config:IdeBuildPath}",
 				"shell": {
-					"executable": "D:/SSG_WORKSPACE/software/Git/bin/bash.exe",
+					"executable": "${config:gitBashPath}",
 					"args": ["-c"]
 				}
 			},
@@ -118,7 +118,7 @@
 			"options": {
 				"cwd": "${config:IdeBuildPath}",
 				"shell": {
-					"executable": "D:/SSG_WORKSPACE/software/Git/bin/bash.exe",
+					"executable": "${config:gitBashPath}",
 					"args": ["-c"]
 				}
 			},

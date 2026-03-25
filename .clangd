@@ -1,7 +1,7 @@
 
 ---
 CompileFlags:
-  Compiler: D:/simlicity studio/developer/toolchains/gnu_arm/12.2.rel1_2023.7/bin/arm-none-eabi-gcc.exe
+  Compiler: arm-none-eabi-gcc.exe
   Add:
     - --target=arm-none-eabi
     - -mcpu=cortex-m33
