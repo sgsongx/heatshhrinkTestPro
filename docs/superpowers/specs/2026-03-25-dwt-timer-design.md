@@ -130,7 +130,12 @@ typedef struct {
 
 ### 4.2 全局计时器池
 ```c
-#define DWT_MAX_TIMERS 4  // 最多支持 4 个计时器
+// 可配置的最大计时器数量（默认 4 个）
+// 用户可在 dwt_timer.h 中覆盖此宏定义
+#ifndef DWT_MAX_TIMERS
+#define DWT_MAX_TIMERS 4
+#endif
+
 #define DWT_TIMER_INVALID 0xFF  // 无效计时器索引
 
 static dwt_timer_t g_dwt_timers[DWT_MAX_TIMERS];
@@ -189,7 +194,33 @@ Core/
 - **系统文件**：`stm32f1xx.h`（CMSIS 定义，包含 DWT 寄存器定义）
 - **HAL**：无直接依赖，纯寄存器操作
 
-### 6.3 集成到 main.c
+### 6.3 配置说明
+
+**配置 DWT_MAX_TIMERS（最大计时器数量）**
+
+方法 1：在 `dwt_timer.h` 中定义（项目级配置）
+```c
+// dwt_timer.h
+#define DWT_MAX_TIMERS 8  // 支持最多 8 个计时器
+#include "dwt_timer_impl.h"
+```
+
+方法 2：编译时指定（编译器命令行）
+```bash
+gcc ... -DDWT_MAX_TIMERS=16 ...
+```
+
+方法 3：CMake 配置（若使用 CMake）
+```cmake
+target_compile_definitions(firmware PRIVATE DWT_MAX_TIMERS=8)
+```
+
+**内存影响**
+- 每个计时器占用 8 字节（2×uint32 + 1×uint8 + 补齐）
+- 若 `DWT_MAX_TIMERS=4`：占用 32 字节
+- 若 `DWT_MAX_TIMERS=16`：占用 128 字节
+
+### 6.4 集成到 main.c
 在 `main()` 中调用初始化：
 ```c
 int main(void) {
