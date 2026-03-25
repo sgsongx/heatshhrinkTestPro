@@ -1,0 +1,6 @@
+r
+halt
+loadfile ".\App.elf"
+r
+go
+exit

@@ -1,0 +1,6 @@
+r
+halt
+loadfile ".\bootloader-second-stage.s37"
+r
+go
+exit

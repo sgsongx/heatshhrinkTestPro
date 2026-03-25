@@ -25,12 +25,12 @@
 			"label": "build target pre",
 			// CFLAGS需要使用''包含起来,否则会被分开识别
 			// "command": "make -j8 all CFLAGS='-DModel_Code=102 -DTestAppConfigJump=991 -DModeConfig_Set=1 -DJumpPassState=0' > ./build.log 2> ./build_err.log",
-			"command": "make -j8 all > ./build.log 2> ./build_err.log",
+			"command": "make -j8 all > ${config:buildFilePath}/build.log 2> ${config:buildFilePath}/build_err.log",
 			"args": [],
 			"options": {
 				"cwd": "${config:IdeBuildPath}",
 				"shell": {
-					"executable": "D:/SSG_WORKSPACE/software/Git/bin/bash.exe",
+					"executable": "${config:gitBashPath}",
 					"args": ["-c"]
 				}
 			},
@@ -40,7 +40,7 @@
 		{
 			"type": "shell",
 			"label": "build target",
-			"command": "./gen_compile_commands.py --format arguments --parse ./build.log ",
+			"command": "./gen_compile_commands.py --format arguments --parse ${config:buildFilePath}/build.log ",
 			"args": [
 				// "make",
 				// "-j8",
@@ -61,7 +61,7 @@
 		{
 			"type": "shell",
 			"label": "Clean target",
-			"command": "make -j8 clean && rm ./compile_commands.json && rm ./build_err.log && rm ./build.log",
+			"command": "make -j8 clean && rm ./compile_commands.json && rm ${config:buildFilePath}/build_err.log && rm ${config:buildFilePath}/build.log",
 			"options": {
 				"cwd": "${config:IdeBuildPath}",
 				"shell": {
@@ -75,7 +75,7 @@
 		{
 			"type": "shell",
 			"label": "build and download",
-			"command": "${config:jlinkPath} -ExitOnError 1 -SelectEmuBySN ${config:jlinkSn} -AutoConnect 1 -Device EFR32BG22CxxxF512 -If SWD -Speed 8000 -CommandFile ${config:buildFilePath}/download_App.jlink",
+			"command": "\"${config:jlinkPath}\" -ExitOnError 1 -SelectEmuBySN ${config:jlinkSn} -AutoConnect 1 -Device ${config:mcuCode} -If ${config:jlinkInterface} -Speed ${config:jlinkSpeed} -CommandFile ${config:buildFilePath}/download_App.jlink",
 			"options": {
 				"cwd": "${config:buildFilePath}"
 			},
@@ -87,7 +87,7 @@
 		{
 			"type": "shell",
 			"label": "Clean and Build",
-			"command": "make -j8 all > ./build.log 2> ./build_err.log",
+			"command": "make -j8 all > ${config:buildFilePath}/build.log 2> ${config:buildFilePath}/build_err.log",
 			"args": [
 				// "make",
 				// "-j8",
@@ -108,7 +108,7 @@
 		{
 			"type": "shell",
 			"label": "rebuild all",
-			"command": "./gen_compile_commands.py --format arguments --parse ./build.log ",
+			"command": "./gen_compile_commands.py --format arguments --parse ${config:buildFilePath}/build.log ",
 			"args": [
 				// "make",
 				// "-j8",
@@ -129,7 +129,7 @@
 		{
 			"type": "shell",
 			"label": "download",
-			"command": "${config:jlinkPath} -ExitOnError 1 -AutoConnect 1 -SelectEmuBySN ${config:jlinkSn} -Device EFR32BG22CxxxF512 -If SWD -Speed 4000 -CommandFile ${config:buildFilePath}/download_${input:download_target}.jlink",
+			"command": "\"${config:jlinkPath}\" -ExitOnError 1 -AutoConnect 1 -SelectEmuBySN ${config:jlinkSn} -Device ${config:mcuCode} -If ${config:jlinkInterface} -Speed ${config:jlinkSpeed} -CommandFile ${config:buildFilePath}/download_${input:download_target}.jlink",
 			"options": {
 				"cwd": "${config:buildFilePath}"
 			},
@@ -139,7 +139,7 @@
 		{
 			"type": "shell",
 			"label": "erase chip",
-			"command": "${config:jlinkPath} -ExitOnError 1 -AutoConnect 1 -SelectEmuBySN ${config:jlinkSn} -Device EFR32BG22CxxxF512 -If SWD -Speed 4000 -CommandFile ${config:buildFilePath}/erase.jlink",
+			"command": "\"${config:jlinkPath}\" -ExitOnError 1 -AutoConnect 1 -SelectEmuBySN ${config:jlinkSn} -Device ${config:mcuCode} -If ${config:jlinkInterface} -Speed ${config:jlinkSpeed} -CommandFile ${config:buildFilePath}/erase.jlink",
 			"options": {
 				"cwd": "${config:buildFilePath}"
 			},
@@ -149,7 +149,7 @@
 		{
 			"type": "shell",
 			"label": "detect conn",
-			"command": "${config:jlinkPath} -ExitOnError 1 -AutoConnect 1 -SelectEmuBySN ${config:jlinkSn} -Device EFR32BG22CxxxF512 -If SWD -Speed 4000 -CommandFile ${config:buildFilePath}/jlink_check_connection.jlink",
+			"command": "\"${config:jlinkPath}\" -ExitOnError 1 -AutoConnect 1 -SelectEmuBySN ${config:jlinkSn} -Device ${config:mcuCode} -If ${config:jlinkInterface} -Speed ${config:jlinkSpeed} -CommandFile ${config:buildFilePath}/jlink_check_connection.jlink",
 			"options": {
 				"cwd": "${config:buildFilePath}"
 			},

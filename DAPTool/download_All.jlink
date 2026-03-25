@@ -1,0 +1,7 @@
+r
+halt
+loadfile ".\bootloader-second-stage.s37"
+loadfile ".\App.axf"
+r
+go
+exit

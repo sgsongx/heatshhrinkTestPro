@@ -1,8 +1,17 @@
 {
+    
+    // DAP config
     "jlinkSn" : "601012373",
+    "jlinkSpeed": 10000,
+    "jlinkInterface": "SWD",
+    "mcuCode": "STM32F103ZE",
+    "svdPath":  "",
+    
+    // project config
     "projectRoot" : "C:/Users/SSG/Desktop/heatshrinkTest",
     "buildFilePath" : "${config:projectRoot}/DAPTool",
-    "IdeBuildPath": "${config:projectRoot}/build",
+    "IdeBuildPath": "${config:projectRoot}",
+
     "cortex-debug.variableUseNaturalFormat": true,
     "python-envs.defaultEnvManager": "ms-python.python:conda",
     "python-envs.defaultPackageManager": "ms-python.python:conda",
