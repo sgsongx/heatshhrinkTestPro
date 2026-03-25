@@ -13,7 +13,7 @@
         },
         {
             "cwd": "${workspaceFolder}",
-            "executable": "${config:buildFilePath}/App.axf",
+            "executable": "${config:buildFilePath}/App.elf",
             "name": "attach with JLink",
             "request": "attach",
             "type": "cortex-debug",
@@ -25,14 +25,14 @@
                 "enabled": true,
                 "samplesPerSecond": 2
             },
-            "svdPath": "${config:svdPath}"
-            // "gdbPath": "D:/simlicity studio/developer/toolchains/gnu_arm/12.2.rel1_2023.7/bin/arm-none-eabi-gdb.exe",
+            "svdPath": "${config:svdPath}",
+            "gdbPath": "arm-none-eabi-gdb.exe",
             // "serverpath": "D:/SSG_WORKSPACE/software/SEGGER/JLink_V818/JLinkGDBServerCL.exe",
             // "debugServer": 50000
         },
         {
             "cwd": "${workspaceFolder}",
-            "executable": "./build/App.axf",
+            "executable": "${config:buildFilePath}/App.elf",
             "name": "start with JLink",
             "request": "launch",
             "type": "cortex-debug",
@@ -45,8 +45,8 @@
                 "samplesPerSecond": 2
             },
             "svdPath": "${config:svdPath}",
-            "preLaunchTask": "build target"
-            // "gdbPath": "D:/simlicity studio/developer/toolchains/gnu_arm/12.2.rel1_2023.7/bin/arm-none-eabi-gdb.exe",
+            "preLaunchTask": "build target",
+            "gdbPath": "arm-none-eabi-gdb.exe",
             // "serverpath": "D:/SSG_WORKSPACE/software/SEGGER/JLink_V818/JLinkGDBServerCL.exe",
             // "debugServer": 50000
         },
