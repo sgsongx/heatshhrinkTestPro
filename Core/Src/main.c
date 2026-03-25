@@ -96,8 +96,20 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
-      HAL_GPIO_TogglePin(LED0_GPIO_Port, LED0_Pin);
-      HAL_Delay(500);
+
+    /* Test DWT timer: measure LED toggle time */
+    uint8_t timer = dwt_start();
+    
+    HAL_GPIO_TogglePin(LED0_GPIO_Port, LED0_Pin);
+    
+    /* Get elapsed time in 10ns units */
+    uint32_t elapsed_10ns = dwt_get_elapsed(timer, 10);
+    
+    /* Stop timer for next measurement */
+    dwt_stop(timer);
+    
+    HAL_Delay(500);
+
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
