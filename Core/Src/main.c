@@ -54,6 +54,20 @@ static void MX_GPIO_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+// 压缩地址
+extern void    FLASH_PageErase(uint32_t PageAddress);
+
+
+#define ORIGIN_DATA_PAGE (134)
+#define CODE_PAGE (5)
+#define ORIGIN_DATA_ADDR (0x8000000 + CODE_PAGE * PAGESIZE)
+#define COMPRESS_DATA_ADDR (0x8000000 + (CODE_PAGE + ORIGIN_DATA_PAGE) * PAGESIZE)
+uint32_t outputBytes = 0;
+
+
+
+
+
 
 /* USER CODE END 0 */
 
@@ -89,6 +103,8 @@ int main(void)
   /* USER CODE BEGIN 2 */
   /* Initialize DWT timer module */
   dwt_init();
+  static volatile uint32_t elapsed_10ns;
+  volatile uint32_t scale = 100000;
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -103,12 +119,13 @@ int main(void)
     HAL_GPIO_TogglePin(LED0_GPIO_Port, LED0_Pin);
     
     /* Get elapsed time in 10ns units */
-    uint32_t elapsed_10ns = dwt_get_elapsed(timer, 10);
+    elapsed_10ns = dwt_get_elapsed(timer, scale);
+
+    HAL_Delay(500);
     
+    elapsed_10ns = dwt_get_elapsed(timer, scale);
     /* Stop timer for next measurement */
     dwt_stop(timer);
-    
-    HAL_Delay(500);
 
     /* USER CODE BEGIN 3 */
   }
