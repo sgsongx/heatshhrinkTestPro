@@ -107,7 +107,9 @@ void dwt_stop(uint8_t timer_id)
  */
 uint32_t dwt_get_elapsed(uint8_t timer_id, uint32_t scale)
 {
-    uint32_t elapsed;
+    uint32_t elapsed_cycles;
+    uint32_t sysclk_hz;
+    uint64_t elapsed_ns;
 
     /* Validate timer ID */
     if (timer_id >= DWT_MAX_TIMERS) {
@@ -119,17 +121,23 @@ uint32_t dwt_get_elapsed(uint8_t timer_id, uint32_t scale)
         scale = 1;
     }
 
+    sysclk_hz = SystemCoreClock;
+    if (sysclk_hz == 0U) {
+        return 0;
+    }
+
     /* Calculate elapsed time
      * For running timers: use current CYCCNT
      * For stopped timers: use recorded stop_count
      * Unsigned arithmetic handles 32-bit overflow correctly
      */
     if (g_dwt_timers[timer_id].is_running) {
-        elapsed = DWT->CYCCNT - g_dwt_timers[timer_id].start_count;
+        elapsed_cycles = DWT->CYCCNT - g_dwt_timers[timer_id].start_count;
     } else {
-        elapsed = g_dwt_timers[timer_id].stop_count - g_dwt_timers[timer_id].start_count;
+        elapsed_cycles = g_dwt_timers[timer_id].stop_count - g_dwt_timers[timer_id].start_count;
     }
 
-    /* Apply scale factor (integer division) */
-    return elapsed / scale;
+    /* Convert cycles to real time in ns, then scale by requested ns unit. */
+    elapsed_ns = ((uint64_t)elapsed_cycles * 1000000000ULL) / (uint64_t)sysclk_hz;
+    return (uint32_t)(elapsed_ns / (uint64_t)scale);
 }

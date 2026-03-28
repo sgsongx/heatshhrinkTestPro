@@ -77,13 +77,12 @@ void dwt_stop(uint8_t timer_id);
  * @brief Get elapsed time from a timer
  *
  * @param timer_id Timer ID returned by dwt_start()
- * @param scale    Time unit scale factor
- *                 - Result unit = (scale × 13.9 ns) ≈ (scale × CPU cycle @ 72MHz)
- *                 - scale=1:   result in CPU cycles
- *                 - scale=10:  result in units of ~139 ns
- *                 - scale=100: result in units of ~1.39 µs
+ * @param scale    Output time unit in nanoseconds (ns)
+ *                 - scale=1:   result unit is 1 ns
+ *                 - scale=10:  result unit is 10 ns
+ *                 - scale=100: result unit is 100 ns
  *
- * @return Elapsed time in units of (scale × ~13.9 ns)
+ * @return Elapsed time in units of scale(ns)
  *         For running timers: time from start to now
  *         For stopped timers: time from start to stop
  *         Integer division used (truncation)
