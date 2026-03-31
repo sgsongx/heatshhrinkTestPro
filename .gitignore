@@ -6,3 +6,8 @@ build/heatshrinkTest.*
 compile_commands.json
 DAPTool/build_err.log
 DAPTool/build.log
+compressedFile.bin
+flash_dump.bin
+gen_compile_commands.bin
+originFile.bin
+ram_dump.bin

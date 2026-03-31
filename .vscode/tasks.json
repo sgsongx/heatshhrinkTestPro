@@ -60,6 +60,34 @@
 		},
 		{
 			"type": "shell",
+			"label": "Download file to flash",
+			"command": "pyocd load -a 0x8002800 ./originFile.bin -u 601012373",
+			"options": {
+				"cwd": "${workspaceFolder}",
+				"shell": {
+					"executable": "${config:gitBashPath}",
+					"args": ["-c"]
+				}
+			},
+			"group": "none",
+			"detail": "Download file to flash"
+		},
+		{
+			"type": "shell",
+			"label": "Road Flash to File",
+			"command": "pyocd commander -c \"savemem 0x08045800 162103 flash_dump.bin\" -u 601012373",
+			"options": {
+				"cwd": "${workspaceFolder}",
+				"shell": {
+					"executable": "${config:gitBashPath}",
+					"args": ["-c"]
+				}
+			},
+			"group": "none",
+			"detail": "Road Flash to File"
+		},
+		{
+			"type": "shell",
 			"label": "Clean target",
 			"command": "make -j8 clean && rm ./compile_commands.json && rm ${config:buildFilePath}/build_err.log && rm ${config:buildFilePath}/build.log",
 			"options": {

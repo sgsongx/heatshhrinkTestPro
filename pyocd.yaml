@@ -1,0 +1,7 @@
+pack:
+  - D:/Studying/developEnv/KEIL/DFP_pack/Keil.STM32F1xx_DFP.2.4.1.pack
+probes:
+  601012373:
+    dap_protocol: swd
+    frequency: 50000000
+    target_override: STM32F103ZE

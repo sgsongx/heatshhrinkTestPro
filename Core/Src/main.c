@@ -22,6 +22,8 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "dwt_timer.h"
+#include "heatshrink_encoder.h"
+#include "stm32f1xx_hal_flash_ex.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -55,14 +57,249 @@ static void MX_GPIO_Init(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 // 压缩地址
-extern void    FLASH_PageErase(uint32_t PageAddress);
 
 
 #define ORIGIN_DATA_PAGE (134)
 #define CODE_PAGE (5)
 #define ORIGIN_DATA_ADDR (0x8000000 + CODE_PAGE * PAGESIZE)
 #define COMPRESS_DATA_ADDR (0x8000000 + (CODE_PAGE + ORIGIN_DATA_PAGE) * PAGESIZE)
-uint32_t outputBytes = 0;
+#define COMPRESS_MAX_SIZE (FLASH_BANK1_END + 1U - COMPRESS_DATA_ADDR)
+volatile uint32_t outputBytes = 0;
+#define ORIGIN_DATA_SIZE (272972)
+
+
+// 实现使用heatshrink算法将FLASH中以ORIGIN_DATA_ADDR地址开始的ORIGIN_DATA_SIZE字节数据压缩后存储到COMPRESS_DATA_ADDR地址, 并将压缩后的数据大小存储到outputBytes变量中
+void compress_flash_data() {
+  // 原始输入数据位于 Flash 固定地址，按块送入编码器。
+  const uint8_t* originData = (const uint8_t*)ORIGIN_DATA_ADDR;
+  size_t inputOffset = 0;
+  size_t compressedCount = 0;
+
+  // 输出写入目标 Flash 区域：按页擦除、按半字(16-bit)编程。
+  uint32_t flashWriteAddr = COMPRESS_DATA_ADDR;
+  uint32_t nextEraseAddr = COMPRESS_DATA_ADDR;
+  uint32_t pageEndAddr = COMPRESS_DATA_ADDR;
+  uint32_t flashLimitAddr = COMPRESS_DATA_ADDR + COMPRESS_MAX_SIZE;
+
+  // 编码器输出暂存缓冲；Flash 写半字时用 pendingByte 处理奇数字节对齐。
+  uint8_t outputBuffer[64];
+  uint8_t pendingByte = 0;
+  uint8_t hasPendingByte = 0;
+  
+  FLASH_EraseInitTypeDef EraseInit;
+  EraseInit.TypeErase = FLASH_TYPEERASE_PAGES;
+  EraseInit.PageAddress = COMPRESS_DATA_ADDR;
+  EraseInit.Banks = 1;
+  EraseInit.NbPages  = 1;
+  uint32_t PageError = 0;
+
+  heatshrink_encoder encoder;
+  heatshrink_encoder_reset(&encoder);
+
+  if (HAL_FLASH_Unlock() != HAL_OK) {
+    outputBytes = 0;
+    return;
+  }
+
+  // 第一阶段：持续 sink 原始数据并 poll 编码输出。
+  while (inputOffset < ORIGIN_DATA_SIZE) {
+    size_t sinkSize = 0;
+    size_t inputChunk = ORIGIN_DATA_SIZE - inputOffset;
+    if (inputChunk > HEATSHRINK_STATIC_INPUT_BUFFER_SIZE) {
+      inputChunk = HEATSHRINK_STATIC_INPUT_BUFFER_SIZE;
+    }
+
+    if (heatshrink_encoder_sink(&encoder,
+        (uint8_t*)&originData[inputOffset],
+        inputChunk,
+        &sinkSize) != HSER_SINK_OK || sinkSize == 0) {
+      HAL_FLASH_Lock();
+      outputBytes = 0;
+      return;
+    }
+    inputOffset += sinkSize;
+
+    while (1) {
+      size_t outputSize = 0;
+      HSE_poll_res pollRes = heatshrink_encoder_poll(&encoder,
+          outputBuffer,
+          sizeof(outputBuffer),
+          &outputSize);
+      if (pollRes < 0) {
+        HAL_FLASH_Lock();
+        outputBytes = 0;
+        return;
+      }
+
+      for (size_t i = 0; i < outputSize; i++) {
+        // 全局边界保护，防止压缩结果超出预留 Flash 区域。
+        if (compressedCount >= COMPRESS_MAX_SIZE) {
+          HAL_FLASH_Lock();
+          outputBytes = 0;
+          return;
+        }
+
+        // 当前页写满时，先擦下一页，再继续写入。
+        if (flashWriteAddr >= pageEndAddr) {
+          if (nextEraseAddr >= flashLimitAddr) {
+            HAL_FLASH_Lock();
+            outputBytes = 0;
+            return;
+          }
+          EraseInit.PageAddress = nextEraseAddr;
+          if (HAL_FLASHEx_Erase(&EraseInit, &PageError) != HAL_OK) {
+            HAL_FLASH_Lock();
+            outputBytes = 0;
+            return;
+          }
+          pageEndAddr = nextEraseAddr + PAGESIZE;
+          nextEraseAddr += PAGESIZE;
+        }
+
+        // 先缓存一个字节，等待凑成半字再调用 HAL_FLASH_Program。
+        if (hasPendingByte == 0U) {
+          pendingByte = outputBuffer[i];
+          hasPendingByte = 1U;
+          compressedCount++;
+          continue;
+        }
+
+        // STM32F1 Flash 按 halfword 编程：低字节在前，高字节在后。
+        uint16_t halfWord = (uint16_t)pendingByte | ((uint16_t)outputBuffer[i] << 8);
+        if (HAL_FLASH_Program(FLASH_TYPEPROGRAM_HALFWORD,
+                              flashWriteAddr,
+                              halfWord) != HAL_OK) {
+          HAL_FLASH_Lock();
+          outputBytes = 0;
+          return;
+        }
+
+        flashWriteAddr += 2U;
+        compressedCount++;
+        hasPendingByte = 0U;
+      }
+
+      if (pollRes != HSER_POLL_MORE) {
+        break;
+      }
+    }
+  }
+
+  // 第二阶段：通知编码器 finish，并将剩余压缩输出全部刷出。
+  while (1) {
+    HSE_finish_res finishRes = heatshrink_encoder_finish(&encoder);
+    if (finishRes < 0) {
+      HAL_FLASH_Lock();
+      outputBytes = 0;
+      return;
+    }
+
+    while (1) {
+      size_t outputSize = 0;
+      HSE_poll_res pollRes = heatshrink_encoder_poll(&encoder,
+          outputBuffer,
+          sizeof(outputBuffer),
+          &outputSize);
+      if (pollRes < 0) {
+        HAL_FLASH_Lock();
+        outputBytes = 0;
+        return;
+      }
+
+      for (size_t i = 0; i < outputSize; i++) {
+        if (compressedCount >= COMPRESS_MAX_SIZE) {
+          HAL_FLASH_Lock();
+          outputBytes = 0;
+          return;
+        }
+
+        if (flashWriteAddr >= pageEndAddr) {
+          if (nextEraseAddr >= flashLimitAddr) {
+            HAL_FLASH_Lock();
+            outputBytes = 0;
+            return;
+          }
+          EraseInit.PageAddress = nextEraseAddr;
+          if (HAL_FLASHEx_Erase(&EraseInit, &PageError) != HAL_OK) {
+            HAL_FLASH_Lock();
+            outputBytes = 0;
+            return;
+          }
+          pageEndAddr = nextEraseAddr + PAGESIZE;
+          nextEraseAddr += PAGESIZE;
+        }
+
+        if (hasPendingByte == 0U) {
+          pendingByte = outputBuffer[i];
+          hasPendingByte = 1U;
+          compressedCount++;
+          continue;
+        }
+
+        uint16_t halfWord = (uint16_t)pendingByte | ((uint16_t)outputBuffer[i] << 8);
+        if (HAL_FLASH_Program(FLASH_TYPEPROGRAM_HALFWORD,
+                              flashWriteAddr,
+                              halfWord) != HAL_OK) {
+          HAL_FLASH_Lock();
+          outputBytes = 0;
+          return;
+        }
+
+        flashWriteAddr += 2U;
+        compressedCount++;
+        hasPendingByte = 0U;
+      }
+
+      if (pollRes != HSER_POLL_MORE) {
+        break;
+      }
+    }
+
+    if (finishRes == HSER_FINISH_DONE) {
+      break;
+    }
+  }
+
+  // 收尾：如果还有单字节未配对，用 0xFF 填充高字节后写入最后一个半字。
+  if (hasPendingByte != 0U) {
+    if (compressedCount >= COMPRESS_MAX_SIZE) {
+      HAL_FLASH_Lock();
+      outputBytes = 0;
+      return;
+    }
+
+    if (flashWriteAddr >= pageEndAddr) {
+      if (nextEraseAddr >= flashLimitAddr) {
+        HAL_FLASH_Lock();
+        outputBytes = 0;
+        return;
+      }
+      EraseInit.PageAddress = nextEraseAddr;
+      if (HAL_FLASHEx_Erase(&EraseInit, &PageError) != HAL_OK) 
+      {
+        HAL_FLASH_Lock();
+        outputBytes = 0;
+        return;
+      }
+      pageEndAddr = nextEraseAddr + PAGESIZE;
+      nextEraseAddr += PAGESIZE;
+    }
+
+    uint16_t halfWord = (uint16_t)pendingByte | 0xFF00U;
+    if (HAL_FLASH_Program(FLASH_TYPEPROGRAM_HALFWORD,
+                          flashWriteAddr,
+                          halfWord) != HAL_OK) {
+      HAL_FLASH_Lock();
+      outputBytes = 0;
+      return;
+    }
+    flashWriteAddr += 2U;
+  }
+
+  // 正常结束：上锁 Flash，并记录压缩输出的实际字节数。
+  HAL_FLASH_Lock();
+  outputBytes = compressedCount;
+}
 
 
 
@@ -105,6 +342,7 @@ int main(void)
   dwt_init();
   static volatile uint32_t elapsed_10ns;
   volatile uint32_t scale = 100000;
+  volatile uint8_t startFlag = 0;
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -113,9 +351,17 @@ int main(void)
   {
     /* USER CODE END WHILE */
 
-    /* Test DWT timer: measure LED toggle time */
+    if(startFlag == 1) {
+      startFlag = 0;
+      /* Test DWT timer: measure LED toggle time */
     uint8_t timer = dwt_start();
+  
+  compress_flash_data();
+  elapsed_10ns = dwt_get_elapsed(timer, scale);
+  dwt_stop(timer);
+    }
     
+    uint8_t timer = dwt_start();
     HAL_GPIO_TogglePin(LED0_GPIO_Port, LED0_Pin);
     
     /* Get elapsed time in 10ns units */

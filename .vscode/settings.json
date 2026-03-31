@@ -2,10 +2,11 @@
     
     // DAP config
     "jlinkSn" : "601012373",
+    // 速度单位kHz
     "jlinkSpeed": 10000,
     "jlinkInterface": "SWD",
     "mcuCode": "STM32F103ZE",
-    "svdPath":  "",
+    "svdPath":  "./STM32F103xx.svd",
     
     // project config
     "projectRoot" : "C:/Users/SSG/Desktop/heatshrinkTest",
